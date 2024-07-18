@@ -8,6 +8,7 @@ import (
 	"context"
 	"os/exec"
 	"sync"
+	"time"
 )
 
 // New is the recommended way to return a new yt-dlp command builder. Once all
@@ -21,8 +22,11 @@ func New() *Command {
 	return cmd
 }
 
+type CallbackProgress func(totalBytes, downloadedBytes int)
+
 type Command struct {
 	mu         sync.RWMutex
+	fun        CallbackProgress
 	executable string
 	directory  string
 	env        map[string]string
@@ -82,6 +86,17 @@ func (c *Command) SetEnvVar(key, value string) *Command {
 	}
 	c.mu.Unlock()
 
+	return c
+}
+
+func (c *Command) SetProgress(delta time.Duration, fun CallbackProgress) *Command {
+	c.ProgressTemplate(`dl:%(progress.total_bytes)s,%(progress.downloaded_bytes)s`).
+		ProgressDelta(float64(delta.Seconds())).
+		Newline().
+		UnsetPrintJSON() // `--progress-template` does not work with `--print-json``
+	c.mu.Lock()
+	c.fun = fun
+	c.mu.Unlock()
 	return c
 }
 
@@ -196,6 +211,10 @@ func (c *Command) runWithResult(cmd *exec.Cmd) (*Result, error) {
 
 	stdout := &timestampWriter{pipe: "stdout"}
 	stderr := &timestampWriter{pipe: "stderr"}
+
+	if c.fun != nil {
+		stdout.fun = c.fun
+	}
 
 	if c.hasJSONFlag() {
 		stdout.checkJSON = true

@@ -11,6 +11,7 @@ import (
 	"reflect"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 	"unicode"
@@ -130,6 +131,8 @@ type timestampWriter struct {
 	checkJSON bool   // Whether to check if the log lines are valid JSON.
 	pipe      string // stdout or stderr.
 
+	fun CallbackProgress
+
 	buf            bytes.Buffer
 	lastWriteStart time.Time
 	results        []*ResultLog
@@ -162,6 +165,15 @@ func (w *timestampWriter) flush() {
 		Timestamp: w.lastWriteStart,
 		Line:      string(line),
 		Pipe:      w.pipe,
+	}
+
+	if w.fun != nil {
+		if tmp, ok := strings.CutPrefix(result.Line, "dl:"); ok {
+			parts := strings.SplitN(tmp, ",", 2)
+			totalBytes, _ := strconv.Atoi(parts[0])
+			downloadedBytes, _ := strconv.Atoi(parts[1])
+			w.fun(totalBytes, downloadedBytes)
+		}
 	}
 
 	if w.checkJSON && len(line) > 0 { // Try to parse the line as JSON.
