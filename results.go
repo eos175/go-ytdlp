@@ -169,10 +169,11 @@ func (w *timestampWriter) flush() {
 
 	if w.fun != nil {
 		if tmp, ok := strings.CutPrefix(result.Line, "dl:"); ok {
-			parts := strings.SplitN(tmp, ",", 2)
+			parts := strings.SplitN(tmp, ",", 3)
 			totalBytes, _ := strconv.Atoi(parts[0])
 			downloadedBytes, _ := strconv.Atoi(parts[1])
-			w.fun(totalBytes, downloadedBytes)
+			status := parts[2]
+			w.fun(totalBytes, downloadedBytes, status)
 		}
 	}
 

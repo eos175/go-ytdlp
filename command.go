@@ -22,7 +22,7 @@ func New() *Command {
 	return cmd
 }
 
-type CallbackProgress func(totalBytes, downloadedBytes int)
+type CallbackProgress func(totalBytes, downloadedBytes int, status string)
 
 type Command struct {
 	mu         sync.RWMutex
@@ -90,10 +90,10 @@ func (c *Command) SetEnvVar(key, value string) *Command {
 }
 
 func (c *Command) SetProgress(delta time.Duration, fun CallbackProgress) *Command {
-	c.ProgressTemplate(`dl:%(progress.total_bytes)s,%(progress.downloaded_bytes)s`).
-		ProgressDelta(float64(delta.Seconds())).
-		Newline().
-		UnsetPrintJSON() // `--progress-template` does not work with `--print-json``
+	c.UnsetPrintJSON().
+		Progress().
+		ProgressTemplate(`dl:%(progress.total_bytes)s,%(progress.downloaded_bytes)s,%(progress.status)s`).
+		Newline()
 	c.mu.Lock()
 	c.fun = fun
 	c.mu.Unlock()
