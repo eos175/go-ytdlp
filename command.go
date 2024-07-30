@@ -90,9 +90,9 @@ func (c *Command) SetEnvVar(key, value string) *Command {
 }
 
 func (c *Command) SetProgress(delta time.Duration, fun CallbackProgress) *Command {
-	c.UnsetPrintJSON().
-		Progress().
-		ProgressTemplate(`dl:%(progress.total_bytes)s,%(progress.downloaded_bytes)s,%(progress.status)s`).
+	c.Progress().
+		ProgressDelta(delta.Seconds()).
+		ProgressTemplate(`dl:%(progress.total_bytes)s,%(progress.total_bytes_estimate)s,%(progress.downloaded_bytes)s,%(progress.status)s`).
 		Newline()
 	c.mu.Lock()
 	c.fun = fun

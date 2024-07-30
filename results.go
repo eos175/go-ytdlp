@@ -169,10 +169,13 @@ func (w *timestampWriter) flush() {
 
 	if w.fun != nil {
 		if tmp, ok := strings.CutPrefix(result.Line, "dl:"); ok {
-			parts := strings.SplitN(tmp, ",", 3)
-			totalBytes, _ := strconv.Atoi(parts[0])
-			downloadedBytes, _ := strconv.Atoi(parts[1])
-			status := parts[2]
+			parts := strings.SplitN(tmp, ",", 4)
+			totalBytes := stringToInt(parts[0])
+			if totalBytes == 0 {
+				totalBytes = stringToInt(parts[1]) // total_bytes_estimate
+			}
+			downloadedBytes := stringToInt(parts[2])
+			status := parts[3]
 			w.fun(totalBytes, downloadedBytes, status)
 		}
 	}
@@ -308,6 +311,14 @@ func cleanExtractedStruct(input any) {
 			field.Set(reflect.Zero(field.Type()))
 		}
 	}
+}
+
+func stringToInt(s string) int {
+	n, err := strconv.ParseFloat(s, 64)
+	if err != nil {
+		return 0
+	}
+	return int(n)
 }
 
 type ExtractedInfo struct {
